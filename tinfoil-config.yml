@@ -1,0 +1,89 @@
+cvm-version: 0.12.0
+cpus: 32
+memory: 524288
+gpus: 8
+
+models:
+  - name: "glm-5-3"
+    repo: "Inferact/GLM-5.3-NVFP4@ce67b36f3669192b5bb233819f0fda6c8a9837f8"
+    mpk: "50f49b63a8139cf970d93e81978c7c21ab42e96b84e80c123f496ae33cb768a8_464867299328_3e063cc8-dc79-5cc0-9fc0-f4201b036669"
+    schema: 2
+
+containers:
+  - name: "glm-5-3"
+    image: "ghcr.io/tinfoilsh/confidential-glm5-3-nvfp4@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    runtime: nvidia
+    gpus: all
+    restart: always
+    env:
+      - PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True"
+      - RUNAI_STREAMER_MEMORY_LIMIT: "4294967296"
+      - RUNAI_STREAMER_CONCURRENCY: "8"
+      - VLLM_ALLREDUCE_USE_SYMM_MEM: "0"
+      - VLLM_ALLREDUCE_USE_FLASHINFER: "0"
+      - VLLM_USE_V2_MODEL_RUNNER: "1"
+      - FLASHINFER_NO_DOWNLOAD: "1"
+      - NUMBA_CACHE_DIR: "/root/numba-cache"
+      - VLLM_ENGINE_READY_TIMEOUT_S: "3600"
+    command:
+      [
+        "--model",
+        "/tinfoil/mpk/mpk-50f49b63a8139cf970d93e81978c7c21ab42e96b84e80c123f496ae33cb768a8",
+        "--kv-cache-dtype",
+        "fp8_e4m3",
+        "--tensor-parallel-size",
+        "8",
+        "--enable-expert-parallel",
+        "--attention-backend",
+        "FLASHINFER_MLA_SPARSE",
+        "--tool-call-parser",
+        "glm47",
+        "--enable-auto-tool-choice",
+        "--enable-prompt-tokens-details",
+        "--enable-force-include-usage",
+        "--middleware",
+        "tinfoil_usage.UsageMetricsMiddleware",
+        "--reasoning-parser",
+        "glm45",
+        "--served-model-name",
+        "glm-5-3",
+        "--scheduling-policy",
+        "priority",
+        "--port",
+        "8001",
+        "--load-format",
+        "runai_streamer",
+        "--disable-custom-all-reduce",
+        "--compilation-config",
+        '{"pass_config":{"fuse_allreduce_rms":false}}',
+        "--max-model-len",
+        "1048576",
+        "--max-num-seqs",
+        "32",
+        "--speculative-config",
+        '{"method":"mtp","num_speculative_tokens":5}',
+      ]
+    tmpfs:
+      /tmp: size=512m,mode=1777,exec
+      /root: size=20g,mode=0700,exec
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 120m
+
+shim:
+  upstream-port: 8001
+  authenticated: true
+  authenticated-endpoints:
+    - /v1/chat/completions
+    - /v1/responses
+    - /tokenize
+    - /metrics
+  paths:
+    - /v1/chat/completions
+    - /v1/models
+    - /v1/responses
+    - /tokenize
+    - /metrics
+    - /health
