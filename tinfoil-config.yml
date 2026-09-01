@@ -11,7 +11,7 @@ models:
 
 containers:
   - name: "glm-5-3"
-    image: "ghcr.io/tinfoilsh/confidential-glm5-3-nvfp4@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    image: "ghcr.io/tinfoilsh/confidential-glm5-3-nvfp4@sha256:04db51ce42618e0435ffce41add49602635cc9cfc7c511a1043a851cdbed7f81" # v0.0.1
     runtime: nvidia
     gpus: all
     restart: always
