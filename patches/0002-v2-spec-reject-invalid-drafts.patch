@@ -4,7 +4,7 @@
 # from req_states.draft_tokens on the GPU and never sees the sentinels, so
 # the rejection sampler can accept grammar-illegal drafts and the structured
 # output manager AssertionErrors the engine (vllm#46118, vllm#49694 — both
-# still open at v0.28.0). Mirror the V1 runner: scatter the sentinels into
+# still open at v0.29.0). Mirror the V1 runner: scatter the sentinels into
 # the batch, keep a pre-clamp gather for the rejection sampler, downgrade
 # the assert to a warning. Carried from confidential-glm5-2-b200 (v0.27.0),
 # rebased onto v0.28.0 in confidential-glm5-3 (InputBatch.max_query_len

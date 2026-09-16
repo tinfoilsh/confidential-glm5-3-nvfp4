@@ -2,7 +2,7 @@
 #
 # Patched vLLM image for GLM-5.3 NVFP4 (Inferact) on 8x NVIDIA Blackwell.
 # Base is digest-pinned for attestation. See patches/ for the diff set.
-ARG VLLM_BASE_IMAGE=vllm/vllm-openai:v0.28.0-ubuntu2404@sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65
+ARG VLLM_BASE_IMAGE=vllm/vllm-openai:v0.29.0-ubuntu2404@sha256:563b8929d66e0891adf9cf1062d1d31d7003b1a5b0cb87a51ba4e92055b5fdb1
 FROM ${VLLM_BASE_IMAGE}
 
 # Patches are -p1 unified diffs rooted at /; they target
