@@ -41,8 +41,6 @@ containers:
         "--enable-auto-tool-choice",
         "--enable-prompt-tokens-details",
         "--enable-force-include-usage",
-        "--middleware",
-        "tinfoil_usage.UsageMetricsMiddleware",
         "--reasoning-parser",
         "glm45",
         "--served-model-name",
