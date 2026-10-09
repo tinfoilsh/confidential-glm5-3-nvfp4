@@ -47,8 +47,8 @@ in [#48200](https://github.com/vllm-project/vllm/pull/48200) and
 patch is replaced by the explicit UVA gate above. Neither legacy patch applies
 to this build.
 
-The deployed configuration pins TRTLLM collectives and preserves MTP5, FP8 KV,
-and 1M context. It includes no repetition-detection default override, output-token
+The recipe preserves MTP5, FP8 KV, and 1M context.
+It includes no repetition-detection default override, output-token
 cap, experimental transfer policy, or local draft-argmax change.
 
 ### vLLM v0.29.0 (diagnostic build, `v0.0.2-vllm029`)
