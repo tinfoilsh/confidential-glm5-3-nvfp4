@@ -1,0 +1,41 @@
+Tune the FP32 Blackwell router for at most 256 rows and shape (256, 6144).
+Related router dispatch: https://github.com/vllm-project/vllm/pull/59985
+--- a/usr/local/lib/python3.12/dist-packages/vllm/model_executor/determinism/batch_invariant_configs.py
++++ b/usr/local/lib/python3.12/dist-packages/vllm/model_executor/determinism/batch_invariant_configs.py
+@@ -6,6 +6,18 @@
+ 
+ from vllm.platforms import current_platform
+ from vllm.platforms.interface import DeviceCapability
++
++
++_FP32_ROUTER_SHAPE = (256, 6144)
++_FP32_ROUTER_MAX_TOKENS = 256
++_FP32_ROUTER_CONFIG = {
++    "BLOCK_SIZE_M": 16,
++    "BLOCK_SIZE_N": 32,
++    "BLOCK_SIZE_K": 256,
++    "GROUP_SIZE_M": 8,
++    "num_warps": 4,
++    "num_stages": 3,
++}
+ 
+ 
+ class _MatmulMConfig(NamedTuple):
+@@ -533,9 +545,16 @@
+ ) -> dict[str, int]:
+     if not _TUNED_MATMUL_CONFIGS_RESOLVED:
+         resolve_tuned_matmul_configs()
++    device_configs = _TUNED_MATMUL_CONFIGS_FOR_DEVICE
++    if (
++        dtype == torch.float32
++        and (N, K) == _FP32_ROUTER_SHAPE
++        and M <= _FP32_ROUTER_MAX_TOKENS
++        and device_configs is _BATCH_INVARIANT_MATMUL_TUNED_CONFIGS["blackwell"]
++    ):
++        return _FP32_ROUTER_CONFIG
+     if dtype != torch.bfloat16:
+         return default
+-    device_configs = _TUNED_MATMUL_CONFIGS_FOR_DEVICE
+     if device_configs is None:
+         return default
+     shape_config = device_configs.get((N, K))

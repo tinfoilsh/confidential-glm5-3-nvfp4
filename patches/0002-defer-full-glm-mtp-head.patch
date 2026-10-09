@@ -1,0 +1,20 @@
+Defer the disposable GLM MTP head until the loaded target head is shared.
+Related: https://github.com/vllm-project/vllm/issues/59306
+--- a/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v32/nvidia/mtp.py
++++ b/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v32/nvidia/mtp.py
+@@ -89,7 +89,14 @@
+             get_sparse_mla_index_group_max_rows(vllm_config),
+         )
+         self.shared_head = SharedHead(
+-            config=config, prefix=prefix, quant_config=quant_config
++            config=config,
++            prefix=prefix,
++            quant_config=quant_config,
++            defer_lm_head=(
++                vllm_config.model_config.hf_config.model_type == "glm_moe_dsa"
++                and vllm_config.use_v2_model_runner
++                and vllm_config.parallel_config.pipeline_parallel_size == 1
++            ),
+         )
+         self.mtp_block = DeepseekV32DecoderLayer(
+             vllm_config,
