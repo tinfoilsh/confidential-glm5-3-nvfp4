@@ -1,7 +1,7 @@
 cvm-version: 0.14.13
 cpus: 32
 memory: 786432
-gpus: 8
+gpus: 4
 
 models:
   - name: "glm-5-3"
@@ -35,7 +35,7 @@ containers:
         "--kv-cache-dtype",
         "fp8_e4m3",
         "--tensor-parallel-size",
-        "8",
+        "4",
         "--enable-expert-parallel",
         "--attention-backend",
         "FLASHINFER_MLA_SPARSE",

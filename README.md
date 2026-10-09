@@ -1,7 +1,10 @@
 # confidential-glm5-3-nvfp4
 
-vLLM 0.31.0 image for GLM-5.3 (Inferact NVFP4) on 8x NVIDIA B300 with
+vLLM 0.31.0 image for GLM-5.3 (Inferact NVFP4) on 4x NVIDIA B300 with
 confidential computing and a 1,048,576-token context window.
+
+Each enclave serves one TP4 replica. Deploy two enclaves to use all eight GPUs
+on a B300 node; request routing remains outside this model container.
 
 Follows the [upstream vLLM recipe](https://recipes.vllm.ai/zai-org/GLM-5.3?hardware=b300&variant=nvfp4)
 (nvfp4 variant, B300). Deviations:
@@ -21,7 +24,7 @@ MTP5, FP8 KV, and opt-in FP32 target routing with K256 tiles. The draft router
 retains its upstream precision. See [patches](patches/README.md) for the CC
 copy fallback, MTP head-loading repair, and router changes.
 
-The measured configuration allocates 32 vCPUs and 768 GiB of guest RAM, with
+Each enclave allocates 32 vCPUs and 768 GiB of guest RAM, with
 a 384 GiB shared-memory ceiling and 2 GiB Run:ai loader buffers. Build-time
 artifact verification includes the B300 SM103a FlashInfer objects and export
 links needed for offline serving. The existing inference sidecar handles usage;
@@ -31,3 +34,5 @@ The selected inference code passed concurrent serving checks and the coding
 workload screen. Some requests exhausted the benchmark's 8,192-token output cap,
 and near-1M recall has varied across runs. These results do not establish general
 quality equivalence; the benchmark cap is not a server setting in this recipe.
+Concurrent early EOS remains unresolved in this image. Passing TP4 checks
+does not establish a general fix.
