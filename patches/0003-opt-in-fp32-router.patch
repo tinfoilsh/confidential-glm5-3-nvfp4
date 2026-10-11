@@ -1,0 +1,77 @@
+Opt in to FP32 target routing without enabling global batch invariance.
+Related: https://github.com/vllm-project/vllm/pull/59985
+--- a/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers/fused_moe/router/gate_linear.py
++++ b/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers/fused_moe/router/gate_linear.py
+@@ -5,6 +5,7 @@
+ 
+ import vllm._custom_ops as ops
+ from vllm.model_executor.custom_op import PluggableLayer
++from vllm.model_executor.determinism.batch_invariant import linear_batch_invariant
+ from vllm.model_executor.layers.linear import (
+     ReplicatedLinear,
+     UnquantizedLinearMethod,
+@@ -54,7 +55,17 @@
+         quant_config: QuantizationConfig | None = None,
+         prefix: str = "",
+         return_bias: bool = True,
++        batch_invariant: bool = False,
+     ):
++        self.batch_invariant = batch_invariant
++        if batch_invariant:
++            if bias or quant_config is not None:
++                raise ValueError(
++                    "Batch-invariant routing requires an unquantized gate without bias"
++                )
++            params_dtype = torch.float32
++            out_dtype = torch.float32
++
+         is_hopper = current_platform.is_device_capability((9, 0))
+         is_blackwell = current_platform.is_device_capability_family(100)
+         is_gfx950 = False
+@@ -96,13 +107,14 @@
+         # A quantized gate exposes no plain ``weight``, so every specialized
+         # tier below is disabled and forward falls back to ReplicatedLinear.
+         self.is_unquantized = isinstance(self.quant_method, UnquantizedLinearMethod)
+-        can_use_specialized_kernels &= self.is_unquantized
++        can_use_specialized_kernels &= self.is_unquantized and not batch_invariant
+ 
+         self.allow_specialized_router_gemm = can_use_specialized_kernels
+ 
+         # fp32 specialized kernel eligibility (exact dims, fp32 weight)
+         self.allow_fp32_router_gemm = (
+-            self.is_unquantized
++            not batch_invariant
++            and self.is_unquantized
+             and not bias
+             and self.weight.dtype == torch.float32
+             and (
+@@ -115,7 +127,8 @@
+             )
+         )
+         self.allow_bf16x3_router_gemm = (
+-            self.is_unquantized
++            not batch_invariant
++            and self.is_unquantized
+             and not bias
+             and self.weight.dtype == torch.float32
+             and current_platform.is_cuda()
+@@ -192,6 +205,9 @@
+     def forward(
+         self, x: torch.Tensor
+     ) -> torch.Tensor | tuple[torch.Tensor, Parameter | None]:
++        if self.batch_invariant:
++            return self._return(linear_batch_invariant(x.float(), self.weight))
++
+         # Tier 1: cuteDSL ll_bf16_gemm (SM90+, any dims)
+         if (
+             self.allow_ll_bf16_gemm
+--- a/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/deepseek_v2.py
++++ b/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/deepseek_v2.py
+@@ -322,6 +322,7 @@
+             config.hidden_size,
+             config.n_routed_experts,
+             out_dtype=self.router_dtype,
++            batch_invariant=getattr(config, "moe_router_batch_invariant", False),
+             prefix=f"{prefix}.gate",
+         )
+         if getattr(config, "topk_method", None) == "noaux_tc":

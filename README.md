@@ -1,17 +1,26 @@
 # confidential-glm5-3-nvfp4
 
-vLLM image for GLM-5.3 (Inferact NVFP4) on 8x NVIDIA Blackwell.
+vLLM 0.31.0 image for GLM-5.3 (Inferact NVFP4) on 4x NVIDIA B300 with
+confidential computing and a 1,048,576-token context window.
 
-Follows the [upstream vLLM recipe](https://recipes.vllm.ai/zai-org/GLM-5.3?hardware=b300&variant=nvfp4)
-(nvfp4 variant, B300). Deviations:
+Each enclave serves one TP4 replica. Deploy two enclaves to use all eight GPUs
+on a B300 node; request routing remains outside this model container.
 
-- Base image digest-pinned for reproducible, attestable builds.
-- Weights pinned to `Inferact/GLM-5.3-NVFP4@ce67b36f` and served from a
-  verified model pack (pack schema 2).
-- `--attention-backend FLASHINFER_MLA_SPARSE` pinned (measured best on SM100
-  for this family).
-- FlashInfer cubins baked at build time (the container runs offline).
-- FlashInfer autotuning disabled (`--no-enable-flashinfer-autotune`); the
-  image lacks the header its timing kernel needs, so it would fall back to
-  event timing anyway.
-- Patches in `patches/`, one line each in the header of the patch file.
+The serving configuration uses the V2 model runner, asynchronous scheduling,
+MTP5, FP8 KV, and opt-in FP32 target routing with K256 tiles. The draft router
+retains its upstream precision. Native CPU prefix caching retains reusable
+prompt KV after GPU eviction. See [tinfoil-config.yml](tinfoil-config.yml) for
+the pinned model revision, CVM version, resource allocation, and serving flags.
+
+## Build
+
+The [Dockerfile](Dockerfile) applies the [vLLM patches](patches/) to a
+digest-pinned base image and packages the inference sidecar.
+
+[build/](build/) prepares FlashInfer for offline startup: it downloads missing
+B300 SM103a kernels, verifies artifact checksums, and creates export-header
+links before the container runs with a read-only root filesystem.
+
+```sh
+docker build -t confidential-glm5-3-nvfp4 .
+```
