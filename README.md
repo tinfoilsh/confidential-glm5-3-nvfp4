@@ -6,45 +6,33 @@ confidential computing and a 1,048,576-token context window.
 Each enclave serves one TP4 replica. Deploy two enclaves to use all eight GPUs
 on a B300 node; request routing remains outside this model container.
 
-Follows the [upstream vLLM recipe](https://recipes.vllm.ai/zai-org/GLM-5.3?hardware=b300&variant=nvfp4)
-(nvfp4 variant, B300). Deviations:
-
-- Base image digest-pinned for reproducible, attestable builds.
-- Weights pinned to `Inferact/GLM-5.3-NVFP4@ce67b36f` and served from a
-  verified model pack (pack schema 2).
-- `--attention-backend FLASHINFER_MLA_SPARSE` pinned (measured best on SM100
-  for this family).
-- FlashInfer cubins baked at build time (the container runs offline).
-- FlashInfer autotuning disabled (`--no-enable-flashinfer-autotune`) to match
-  the measured candidate.
-- Patches in `patches/`, one line each in the header of the patch file.
-
 The serving configuration uses the V2 model runner, asynchronous scheduling,
 MTP5, FP8 KV, and opt-in FP32 target routing with K256 tiles. The draft router
-retains its upstream precision. See [patches](patches/README.md) for the CC
-copy fallback, MTP head-loading repair, and router changes.
+retains its upstream precision. Native CPU prefix caching retains reusable
+prompt KV after GPU eviction. See [tinfoil-config.yml](tinfoil-config.yml) for
+the pinned model revision, CVM version, resource allocation, and serving flags.
 
-Each enclave allocates 32 vCPUs and 768 GiB of guest RAM, with
-a 384 GiB shared-memory ceiling and 2 GiB Run:ai loader buffers. Build-time
-artifact verification includes the B300 SM103a FlashInfer objects and export
-links needed for offline serving. The existing inference sidecar handles usage;
-the image does not install the lab's worker extension or enable development RPCs.
+## Build
 
-Native vLLM CPU offloading reserves 256 GiB per enclave for reusable prompt KV,
-shared across the four TP ranks within the shared-memory ceiling. Packed BLHNC
-layout and 64-token blocks keep each offloaded block contiguous. The connector
-stores prompt blocks with LRU eviction; GPU cache sizing and the active context
-limit remain unchanged. The remaining 512 GiB of guest RAM covers the model
-loader, container filesystems, and serving processes.
+The [Dockerfile](Dockerfile) applies the [vLLM patches](patches/README.md) to a
+digest-pinned base image and packages the inference sidecar.
 
-Single-request CPU offload checks passed at 64K and 128K input tokens on
-development firmware `2cb6ab7`, with normal GPU cache sizing and GPU-only cache
-resets to force CPU reloads. All 16 responses passed the semantic checks.
-They do not qualify concurrent serving, the pinned CVM 0.14.13 boot, or throughput.
+[build/](build/) prepares FlashInfer for offline startup: it downloads missing
+B300 SM103a kernels, verifies artifact checksums, and creates export-header
+links before the container runs with a read-only root filesystem.
 
-The selected inference code passed concurrent serving checks and the coding
-workload screen. Some requests exhausted the benchmark's 8,192-token output cap,
-and near-1M recall has varied across runs. These results do not establish general
-quality equivalence; the benchmark cap is not a server setting in this recipe.
-Concurrent early EOS remains unresolved in this image. Passing TP4 checks
-does not establish a general fix.
+```sh
+docker build -t confidential-glm5-3-nvfp4 .
+```
+
+See [tests/README.md](tests/README.md) for the CPU checks and their scope.
+
+## Current limitations
+
+Concurrent early EOS remains unresolved. Long-context recall is not fully
+reliable, and requests can exhaust their completion budget before producing a
+final answer. CPU prefix caching still requires concurrent serving, throughput,
+and boot validation on the pinned CVM 0.14.13.
+
+Experiment results are maintained in the
+[private lab notes](https://github.com/tinfoilsh/glm-b300-cc-lab/tree/main/notes).

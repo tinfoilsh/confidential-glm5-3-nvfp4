@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 #
-# Patched vLLM image for GLM-5.3 NVFP4 (Inferact) on 8x NVIDIA Blackwell.
+# Patched vLLM image for GLM-5.3 NVFP4 (Inferact) on 4x NVIDIA B300.
 # Base is digest-pinned for attestation. See patches/ for the diff set.
 ARG VLLM_BASE_IMAGE=vllm/vllm-openai:v0.31.0@sha256:a4a4c0437bf7240089da5f08aa370c4aee17ae5290f7a3b468825ee26c4c3a6b
 ARG SIDECAR_IMAGE=ghcr.io/tinfoilsh/inference-sidecar@sha256:65ce23d6560c46a1e8614ede187fcbf9798b267aa33878905b4872404787f47d
