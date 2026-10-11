@@ -30,6 +30,13 @@ artifact verification includes the B300 SM103a FlashInfer objects and export
 links needed for offline serving. The existing inference sidecar handles usage;
 the image does not install the lab's worker extension or enable development RPCs.
 
+Native vLLM CPU offloading reserves 256 GiB per enclave for reusable prompt KV,
+shared across the four TP ranks within the shared-memory ceiling. Packed BLHNC
+layout and 64-token blocks keep each offloaded block contiguous. The connector
+stores prompt blocks with LRU eviction; GPU cache sizing and the active context
+limit remain unchanged. The remaining 512 GiB of guest RAM covers the model
+loader, container filesystems, and serving processes.
+
 The selected inference code passed concurrent serving checks and the coding
 workload screen. Some requests exhausted the benchmark's 8,192-token output cap,
 and near-1M recall has varied across runs. These results do not establish general
