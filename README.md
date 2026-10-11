@@ -24,6 +24,3 @@ links before the container runs with a read-only root filesystem.
 ```sh
 docker build -t confidential-glm5-3-nvfp4 .
 ```
-
-CC patch documentation, regression tests, and qualification status are maintained
-in the [private CC lab](https://github.com/tinfoilsh/glm-b300-cc-lab/tree/main/validation/full-model-runtime).
