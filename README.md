@@ -14,7 +14,7 @@ the pinned model revision, CVM version, resource allocation, and serving flags.
 
 ## Build
 
-The [Dockerfile](Dockerfile) applies the [vLLM patches](patches/README.md) to a
+The [Dockerfile](Dockerfile) applies the [vLLM patches](patches/) to a
 digest-pinned base image and packages the inference sidecar.
 
 [build/](build/) prepares FlashInfer for offline startup: it downloads missing
@@ -25,14 +25,5 @@ links before the container runs with a read-only root filesystem.
 docker build -t confidential-glm5-3-nvfp4 .
 ```
 
-See [tests/README.md](tests/README.md) for the CPU checks and their scope.
-
-## Current limitations
-
-Concurrent early EOS remains unresolved. Long-context recall is not fully
-reliable, and requests can exhaust their completion budget before producing a
-final answer. CPU prefix caching still requires concurrent serving, throughput,
-and boot validation on the pinned CVM 0.14.13.
-
-Experiment results are maintained in the
-[private lab notes](https://github.com/tinfoilsh/glm-b300-cc-lab/tree/main/notes).
+CC patch documentation, regression tests, and qualification status are maintained
+in the [private CC lab](https://github.com/tinfoilsh/glm-b300-cc-lab/tree/main/validation/full-model-runtime).
