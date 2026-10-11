@@ -37,6 +37,10 @@ stores prompt blocks with LRU eviction; GPU cache sizing and the active context
 limit remain unchanged. The remaining 512 GiB of guest RAM covers the model
 loader, container filesystems, and serving processes.
 
+CPU offload checks target development firmware `2cb6ab7`, one request at a time,
+with normal GPU cache sizing and GPU-only cache resets to force CPU reloads.
+They do not qualify concurrent serving, the pinned CVM 0.14.13 boot, or throughput.
+
 The selected inference code passed concurrent serving checks and the coding
 workload screen. Some requests exhausted the benchmark's 8,192-token output cap,
 and near-1M recall has varied across runs. These results do not establish general
