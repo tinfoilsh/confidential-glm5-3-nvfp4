@@ -5,3 +5,4 @@
 19191d160cb48d79508eb822db795ffe638268f2c585eaffda05966e47b78252  /usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers/fused_moe/router/gate_linear.py
 1a9082973a62a5f1c66d1607f0a8c9645816a537bae91f24fd2004585d815393  /usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/deepseek_v2.py
 9fef5b173374b7fe01f199332bea7477fde6384f63d62bc5662722e55f0bdaa4  /usr/local/lib/python3.12/dist-packages/vllm/model_executor/determinism/batch_invariant_configs.py
+3db5b6f8fc8156083e974ed805f46b964eabcec9e07fc0625ae930e0b9410040  /usr/local/lib/python3.12/dist-packages/vllm/v1/kv_offload/cpu/gpu_worker.py
